@@ -57,20 +57,78 @@ def conv1d_block(in_channels,
     return sequential_pack(block)
 
 
+def conv2d_block_bn(in_channels,
+                    out_channels,
+                    kernel_size,
+                    stride=1,
+                    padding=0,
+                    dilation=1,
+                    groups=1,
+                    init_type=None,
+                    activation=None,
+                    use_batchnorm=False):
+    # conv2d + bn + activation
+    block = []
+    block.append(nn.Conv2d(in_channels, out_channels,
+                           kernel_size, stride, padding, dilation, groups))
+    weight_init_(block[-1].weight, init_type, activation)
+    if use_batchnorm:
+        block.append(nn.BatchNorm2d(out_channels))
+    if activation is not None:
+        block.append(activation)
+    return sequential_pack(block)
+
+
 def conv2d_block(in_channels,
                  out_channels,
                  kernel_size,
                  stride=1,
                  padding=0,
                  dilation=1,
-                 groups=1,
+                 roups=1,
                  init_type=None,
                  activation=None,
-                 use_batchnorm=False):
-    # conv2d + bn + activation
+                 norm_type=None):
+    # conv2d + norm + activation
     block = []
     block.append(nn.Conv2d(in_channels, out_channels,
                            kernel_size, stride, padding, dilation, groups))
+    weight_init_(block[-1].weight, init_type, activation)
+    if norm_type is None:
+        pass
+    elif norm_type == 'BN':
+        block.append(nn.BatchNorm2d(out_channels))
+    elif norm_type == 'IN':
+        block.append(nn.InstanceNorm2d(out_channels, affine=True))
+    else:
+        raise ValueError
+    if activation is not None:
+        block.append(activation)
+    return sequential_pack(block)
+
+
+def deconv2d_block_bn(in_channels,
+                      out_channels,
+                      kernel_size,
+                      stride=1,
+                      padding=0,
+                      output_padding=0,
+                      dilation=1,
+                      groups=1,
+                      init_type=None,
+                      activation=None,
+                      use_batchnorm=False):
+    # transpose conv2d + bn + activation
+    block = []
+    block.append(nn.ConvTranspose2d(
+        in_channels=in_channels,
+        out_channels=out_channels,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        output_padding=output_padding,
+        groups=groups
+    ))
     weight_init_(block[-1].weight, init_type, activation)
     if use_batchnorm:
         block.append(nn.BatchNorm2d(out_channels))
@@ -89,21 +147,27 @@ def deconv2d_block(in_channels,
                    groups=1,
                    init_type=None,
                    activation=None,
-                   use_batchnorm=False):
-    # transpose conv2d + bn + activation
+                   norm_type=None):
+    # transpose conv2d + norm + activation
     block = []
     block.append(nn.ConvTranspose2d(
-                    in_channels=in_channels,
-                    out_channels=out_channels,
-                    kernel_size=kernel_size,
-                    stride=stride,
-                    padding=padding,
-                    output_padding=output_padding,
-                    groups=groups
-                    ))
+        in_channels=in_channels,
+        out_channels=out_channels,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        output_padding=output_padding,
+        groups=groups
+    ))
     weight_init_(block[-1].weight, init_type, activation)
-    if use_batchnorm:
+    if norm_type is None:
+        pass
+    elif norm_type == 'BN':
         block.append(nn.BatchNorm2d(out_channels))
+    elif norm_type == 'IN':
+        block.append(nn.InstanceNorm2d(out_channels, affine=True))
+    else:
+        raise ValueError
     if activation is not None:
         block.append(activation)
     return sequential_pack(block)
