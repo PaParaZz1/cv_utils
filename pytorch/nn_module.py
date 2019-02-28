@@ -196,6 +196,7 @@ class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels=None, kernel_size=3, stride=1,
                  padding=None, init_type=None, activation=nn.ReLU(),
                  norm_type=None, is_bottleneck=False, scaling_factor=1.):
+        super(ResidualBlock, self).__init__()
         assert stride in [1, 2]
         if out_channels is None:
             out_channels = in_channels // stride
