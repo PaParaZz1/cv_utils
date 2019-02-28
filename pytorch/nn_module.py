@@ -85,7 +85,7 @@ def conv2d_block(in_channels,
                  stride=1,
                  padding=0,
                  dilation=1,
-                 roups=1,
+                 groups=1,
                  init_type=None,
                  activation=None,
                  norm_type=None):
@@ -195,7 +195,7 @@ def fc_block(in_channels,
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels=None, kernel_size=3, stride=1,
                  padding=None, init_type=None, activation=nn.ReLU(),
-                 use_batchnorm=False, is_bottleneck=False, scaling_factor=1.):
+                 norm_type=None, is_bottleneck=False, scaling_factor=1.):
         assert stride in [1, 2]
         if out_channels is None:
             out_channels = in_channels // stride
@@ -208,7 +208,7 @@ class ResidualBlock(nn.Module):
                                          padding=0,
                                          init_type=init_type,
                                          activation=None,
-                                         use_batchnorm=use_batchnorm)
+                                         norm_type=norm_type)
 
         block = []
         if is_bottleneck:
@@ -219,7 +219,7 @@ class ResidualBlock(nn.Module):
                                       padding=0,
                                       init_type=init_type,
                                       activation=activation,
-                                      use_batchnorm=use_batchnorm))
+                                      norm_type=norm_type))
             block.append(conv2d_block(in_channels=in_channels // 2,
                                       out_channels=out_channels // 2,
                                       kernel_size=kernel_size,
@@ -227,7 +227,7 @@ class ResidualBlock(nn.Module):
                                       padding=(kernel_size - 1) // 2,
                                       init_type=init_type,
                                       activation=activation,
-                                      use_batchnorm=use_batchnorm))
+                                      norm_type=norm_type))
             block.append(conv2d_block(in_channels=out_channels // 2,
                                       out_channels=out_channels,
                                       kernel_size=1,
@@ -235,7 +235,7 @@ class ResidualBlock(nn.Module):
                                       padding=0,
                                       init_type=init_type,
                                       activation=None,
-                                      use_batchnorm=use_batchnorm))
+                                      norm_type=norm_type))
         else:
             if padding is None:
                 padding = (kernel_size - 1) // 2
@@ -246,7 +246,7 @@ class ResidualBlock(nn.Module):
                                       padding=padding,
                                       init_type=init_type,
                                       activation=activation,
-                                      use_batchnorm=use_batchnorm))
+                                      norm_type=norm_type))
             block.append(conv2d_block(in_channels=in_channels,
                                       out_channels=out_channels,
                                       kernel_size=kernel_size,
@@ -254,7 +254,7 @@ class ResidualBlock(nn.Module):
                                       padding=padding,
                                       init_type=init_type,
                                       activation=None,
-                                      use_batchnorm=use_batchnorm))
+                                      norm_type=norm_type))
         self.scaling_factor = scaling_factor
         self.activation = activation
         self.block = sequential_pack(block)
