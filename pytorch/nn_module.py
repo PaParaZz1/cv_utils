@@ -297,3 +297,16 @@ class ResidualBlock(nn.Module):
     def forward(self, x):
         return self.activation(self.block(x) +
                                self.scaling_factor * self.shortcut(x))
+
+
+class ChannelShuffle(nn.Module):
+    def __init__(self, group_num):
+        super(ChannelShuffle, self).__init__()
+        self.group_num = group_num
+
+    def forward(self, x):
+        b, c, h, w = x.shape
+        g = self.group_num
+        assert(c % g == 0)
+        x = x.view(b, g, c//g, h, w).permute(0, 2, 1, 3, 4).contiguous().view(b, c, h, w)
+        return x
