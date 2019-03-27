@@ -103,9 +103,7 @@ void grayLinearTransform(const cv::Mat& gray_img) {
     cv::imwrite("gray_linear_transform.png", concat_img);
 }
 
-void grayStretch(const cv::Mat& gray_img) {
-    const unsigned min_limit = 40;
-    const unsigned max_limit = 240;
+void grayStretch(const cv::Mat& gray_img, const unsigned min_limit=40, const unsigned max_limit=240) {
     int H = gray_img.rows;
     int W = gray_img.cols;
     cv::Mat result_img = cv::Mat::zeros(H, W, CV_8UC1);

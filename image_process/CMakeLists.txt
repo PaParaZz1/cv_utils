@@ -20,9 +20,9 @@ SET(ALL_SRC
 )
 
 SET(ALL_LIB
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../stmobile_ai_image/libs/linux_x86_64/libopencv_core.so
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../stmobile_ai_image/libs/linux_x86_64/libopencv_imgproc.so
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../stmobile_ai_image/libs/linux_x86_64/libopencv_imgcodecs.so
+    opencv-core
+    opencv-imgproc
+    opencv-imgcodecs
 )
 
 ADD_EXECUTABLE(${PROJECT_NAME}
