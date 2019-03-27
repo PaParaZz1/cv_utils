@@ -1,2 +1,4 @@
 *.swp
 *.pyc
+image_process/build_temp_dir
+image_process/image_process

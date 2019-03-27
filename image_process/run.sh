@@ -1,1 +1,1 @@
-./image_process -i test.png
+./image_process -i data/test.png
