@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.nn.init import xavier_normal_, kaiming_normal_, orthogonal_
 
 
@@ -74,8 +75,8 @@ class AdaptiveInstanceNorm2d(nn.Module):
     def forward(self, x):
         assert self.weight is not None and self.bias is not None
         b, c, h, w = x.shape
-        running_mean = self.running_mean(b)
-        running_var = self.running_var(b)
+        running_mean = self.running_mean.repeat(b)
+        running_var = self.running_var.repeat(b)
 
         x_reshape = x.contiguous().view(1, b*c, h, w)
         output = F.batch_norm(
@@ -89,7 +90,13 @@ class AdaptiveInstanceNorm2d(nn.Module):
 def sequential_pack(layers):
     assert isinstance(layers, list)
     seq = nn.Sequential(*layers)
-    seq.out_channels = layers[0].out_channels
+    for item in layers:
+        if isinstance(item, nn.Conv2d) or isinstance(item, nn.ConvTranspose2d):
+            seq.out_channels = item.out_channels
+            break
+        elif isinstance(item, nn.Conv1d):
+            seq.out_channels = item.out_channels
+            break
     return seq
 
 
@@ -198,8 +205,6 @@ def deconv2d_block_bn(in_channels,
         block.append(nn.ReflectionPad2d(padding))
     elif pad_type == 'replicate':
         block.append(nn.ReplicatePad2d(padding))
-    elif norm_type == 'AdaptiveIN':
-        block.append(AdaptiveInstanceNorm2d(out_channels))
     else:
         raise ValueError
     block.append(nn.ConvTranspose2d(
@@ -228,16 +233,25 @@ def deconv2d_block(in_channels,
                    dilation=1,
                    groups=1,
                    init_type=None,
+                   pad_type='zero',
                    activation=None,
                    norm_type=None):
     # transpose conv2d + norm + activation
     block = []
+    if pad_type == 'zero':
+        block.append(nn.ZeroPad2d(padding))
+    elif pad_type == 'reflect':
+        block.append(nn.ReflectionPad2d(padding))
+    elif pad_type == 'replicate':
+        block.append(nn.ReplicatePad2d(padding))
+    else:
+        raise ValueError
     block.append(nn.ConvTranspose2d(
         in_channels=in_channels,
         out_channels=out_channels,
         kernel_size=kernel_size,
         stride=stride,
-        padding=padding,
+        padding=0,
         output_padding=output_padding,
         groups=groups
     ))
@@ -250,6 +264,8 @@ def deconv2d_block(in_channels,
         block.append(nn.InstanceNorm2d(out_channels, affine=True))
     elif norm_type == 'LN':
         block.append(LayerNorm(out_channels, affine=True))
+    elif norm_type == 'AdaptiveIN':
+        block.append(AdaptiveInstanceNorm2d(out_channels))
     else:
         raise ValueError
     if activation is not None:
@@ -261,14 +277,24 @@ def fc_block(in_channels,
              out_channels,
              init_type=None,
              activation=None,
-             use_batchnorm=False,
+             norm_type=None,
              use_dropout=False,
              dropout_probability=0.5):
     block = []
     block.append(nn.Linear(in_channels, out_channels))
     weight_init_(block[-1].weight, init_type, activation)
-    if use_batchnorm:
-        block.append(nn.BatchNorm1d(out_channels))
+    if norm_type is None:
+        pass
+    elif norm_type == 'BN':
+        block.append(nn.BatchNorm2d(out_channels))
+    elif norm_type == 'IN':
+        block.append(nn.InstanceNorm2d(out_channels, affine=True))
+    elif norm_type == 'LN':
+        block.append(LayerNorm(out_channels, affine=True))
+    elif norm_type == 'AdaptiveIN':
+        block.append(AdaptiveInstanceNorm2d(out_channels))
+    else:
+        raise ValueError
     if activation is not None:
         block.append(activation)
     if use_dropout:
