@@ -3,7 +3,7 @@ from functools import partial
 
 
 def gauss_blur(img):
-    return cv2.GaussianBlur(img, (7,7), 0)
+    return cv2.GaussianBlur(img, (7, 7), 0)
 
 
 def motion_blur(img, kernel_path):
