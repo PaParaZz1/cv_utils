@@ -19,7 +19,7 @@ class SaltPepperNoise(object):
         p: probability of add noise on pixel
         done_p: probability of doing add noise operation
     '''
-    def __init__(self, p, done_p=0):
+    def __init__(self, p, done_p=1):
         self.p = p
         self.dead_tensor = torch.FloatTensor([-1])
         self.hot_tensor = torch.FloatTensor([2])
@@ -30,40 +30,71 @@ class SaltPepperNoise(object):
     def __call__(self, img):
         assert(isinstance(img, torch.Tensor) or isinstance(img, np.ndarray))
         if isinstance(img, np.ndarray):
-            x = torch.from_numpy(img.copy())
+            y = torch.from_numpy(img.copy())
         else:
-            x = img.clone()
-        assert(len(x.shape) in [2, 3])
+            y = img.clone()
+        assert(len(y.shape) in [2, 3])
 
         if np.random.uniform(0, 1) > self.done_p:
-            return x.numpy()
-        mask = np.random.uniform(0, 1, size=x.shape)
-        mask = torch.from_numpy(mask).float()
-        mask = torch.where(mask < self.p, self.dead_tensor, mask)
-        mask = torch.where(mask > 1-self.p, self.hot_tensor, mask)
+            return y.numpy()
+        if len(y.shape) == 2:
+            y = y[:, :, np.newaxis]
+        for i in range(y.shape[2]):
+            x = y[:, :, i]
+            mask = np.random.uniform(0, 1, size=x.shape)
+            mask = torch.from_numpy(mask).float()
+            mask = torch.where(mask < self.p, self.dead_tensor, mask)
+            mask = torch.where(mask > 1-self.p, self.hot_tensor, mask)
 
-        x = torch.where(mask == self.dead_tensor, self.dead_point, x)
-        x = torch.where(mask == self.hot_tensor, self.hot_point, x)
-        x = x.numpy()
-        return x
+            x = torch.where(mask == self.dead_tensor, self.dead_point, x)
+            x = torch.where(mask == self.hot_tensor, self.hot_point, x)
+            y[:, :, i] = x
+        y = y.numpy()
+        return y
 
 
 class GaussianPossionNoise(object):
-    def __init__(self, mode, multi_factor_range):
-        assert(mode in self.mode_list)
-        self.mode = mode
-        self.multi_factor_range = multi_factor_range
+    def __init__(self):
+        pass
 
     def __call__(self, img, sig_read, sig_shot):
         assert(isinstance(img, np.ndarray))
-        x = img.copy()
-        assert(len(x.shape) in [2])
-        variance = np.ones(x.shape) * sig_read**2
-        variance += sig_shot*x
-        std = np.sqrt(variance)
-        H, W = x.shape
-        for h in range(H):
-            for w in range(W):
-                x[h, w] += np.random.normal(loc=0, scale=std[h, w])
-        return x
+        y = img.copy()
+        assert(len(y.shape) in [2, 3])
+        if len(y.shape) == 2:
+            y = y[:, :, np.newaxis]
+        for i in range(y.shape[2]):
+            x = y[:, :, i]
+            variance = np.ones(x.shape) * sig_read**2
+            variance += sig_shot*x
+            std = np.sqrt(variance)
+            H, W = x.shape
+            for h in range(H):
+                for w in range(W):
+                    x[h, w] += np.random.normal(loc=0, scale=std[h, w])
+            y[:, :, i] = x
+        return y
 
+
+def noise_gauss(img):
+    handle = AWGN()
+    img = img.astype(np.float32) / 255
+    img = handle(img, 1e-2)
+    img = (img*255).clip(0, 255).astype(np.uint8)
+    return img
+
+
+def noise_gauss_possion(img):
+    handle = GaussianPossionNoise()
+    img = img.astype(np.float32) / 255
+    img = handle(img, 1e-3, 1e-2)
+    img = (img*255).clip(0, 255).astype(np.uint8)
+    return img
+
+
+def noise_salt_pepper(img):
+    handle = SaltPepperNoise(p=1e-3)
+    img = img.astype(np.float32) / 255
+    img = handle(img)
+    img = (img*255).clip(0, 255).astype(np.uint8)
+    return img
