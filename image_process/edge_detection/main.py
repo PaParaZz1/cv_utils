@@ -11,7 +11,7 @@ def img_process_func(img):
     img_list = [F(img) for F in img_func_list]
 
     origin_func_list = [lambda x:x]
-    edge_func_list = [E.gradient_canny, E.gradient_laplace, E.gradient_canny]
+    edge_func_list = [E.gradient_sobel, E.gradient_laplace, E.gradient_canny]
     sharpen_func_list = [S.sharpen_naive, S.unsharpened_mask]
     process_func_list = origin_func_list + edge_func_list + sharpen_func_list
 

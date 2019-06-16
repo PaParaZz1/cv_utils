@@ -9,7 +9,7 @@ def sharpen_naive(img, strength=0.5):
     return sharpen_img.clip(0, 255).astype(np.uint8)
 
 
-def unsharpened_mask(img, strength=0.5):
+def unsharpened_mask(img, strength=0.8):
     assert(strength > 0 and strength < 1)
 
     def constrast(img):
@@ -23,12 +23,14 @@ def unsharpened_mask(img, strength=0.5):
 
     threshold = img.max() // 2
     constrast_img = constrast(img)
-    low_freq_img = cv2.GaussianBlur(img, (3, 3), 0)
+    low_freq_img = cv2.GaussianBlur(img, (5, 5), 0.4)
     high_freq_img = img - low_freq_img
+    high_freq_img = np.abs(high_freq_img)
     index = np.where(high_freq_img > threshold)
 
-    img = img.astype(np.float32)
+    sharpen_img = img.astype(np.float32)
     constrast_img = constrast_img.astype(np.float32)
-    img[index] = (1-strength)*img[index] + strength*constrast_img[index]
-    img = img.clip(0, 255).astype(np.uint8)
-    return img
+    sharpen_img[index] = (1-strength)*sharpen_img[index] + (strength)*constrast_img[index]
+    print(sharpen_img.mean())
+    sharpen_img = sharpen_img.clip(0, 255).astype(np.uint8)
+    return sharpen_img

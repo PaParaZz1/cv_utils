@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 
-def gradient_sobel(img, use_gauss=False, return_3c=True):
+def gradient_sobel(img, use_gauss=True, return_3c=True):
     x = np.copy(img)
     if use_gauss:
         x = cv2.GaussianBlur(x, (3, 3), 0)
@@ -18,7 +18,7 @@ def gradient_sobel(img, use_gauss=False, return_3c=True):
     return sobel
 
 
-def gradient_scharr(img, use_gauss=False, return_3c=True):
+def gradient_scharr(img, use_gauss=True, return_3c=True):
     x = np.copy(img)
     if use_gauss:
         x = cv2.GaussianBlur(x, (3, 3), 0)
@@ -34,20 +34,22 @@ def gradient_scharr(img, use_gauss=False, return_3c=True):
     return scharr
 
 
-def gradient_laplace(img, use_gauss=False, return_3c=True):
+def gradient_laplace(img, use_gauss=True, return_3c=True, sharp_mask=True):
     x = np.copy(img)
     if use_gauss:
         x = cv2.GaussianBlur(x, (3, 3), 0)
     x = cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)
     x = cv2.Laplacian(x, cv2.CV_16S, 3)
-    x = cv2.convertScaleAbs(x)
+    x = np.abs(x)
+    if not sharp_mask:
+        x = (x - x.min()) / (x.max() - x.min()) * 255
     if return_3c:
         x = x[:, :, np.newaxis]
         x = x.repeat(3, axis=2)
     return x
 
 
-def gradient_canny(img, use_gauss=False, return_3c=True):
+def gradient_canny(img, use_gauss=True, return_3c=True):
     x = np.copy(img)
     if use_gauss:
         x = cv2.GaussianBlur(x, (3, 3), 0)
