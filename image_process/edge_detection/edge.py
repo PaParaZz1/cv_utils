@@ -18,6 +18,22 @@ def gradient_sobel(img, use_gauss=False, return_3c=True):
     return sobel
 
 
+def gradient_scharr(img, use_gauss=False, return_3c=True):
+    x = np.copy(img)
+    if use_gauss:
+        x = cv2.GaussianBlur(x, (3, 3), 0)
+    x = cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)
+    scharr_x = cv2.Scharr(x, cv2.CV_16S, 1, 0)
+    scharr_y = cv2.Scharr(x, cv2.CV_16S, 0, 1)
+    scharr_x = cv2.convertScaleAbs(scharr_x)
+    scharr_y = cv2.convertScaleAbs(scharr_y)
+    scharr = 0.5*scharr_x + 0.5*scharr_y
+    if return_3c:
+        scharr = scharr[:, :, np.newaxis]
+        scharr = scharr.repeat(3, axis=2)
+    return scharr
+
+
 def gradient_laplace(img, use_gauss=False, return_3c=True):
     x = np.copy(img)
     if use_gauss:
